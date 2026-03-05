@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Add Bag</h2>
+    
+    <div id="alert" class="alert"></div>
+    
+    <form id="bagForm">
+        <div class="form-group">
+            <label for="bag_num">Bag Number (Auto-assigned)</label>
+            <input type="number" id="bag_num" name="bag_num" required readonly style="background: #f5f5f5; cursor: not-allowed;">
+        </div>
+        
+        <div class="form-group">
+            <label for="flavor">Flavor *</label>
+            <input type="text" id="flavor" name="flavor" required placeholder="e.g., Chicken, Steak, Carnitas..." list="flavorList" autofocus>
+            <datalist id="flavorList">
+                <option value="Chicken">
+                <option value="Steak">
+                <option value="Chicken & Cheese">
+                <option value="Street Beef">
+                <option value="Carnitas Taco">
+                <option value="La Cubana">
+                <option value="Pulled Chorizo">
+                <option value="Cheeseburger">
+                <option value="Carolina BBQ">
+                <option value="Jamaican Beef">
+                <option value="Bacon Date Goat Cheese">
+                <option value="Lobster Corn Chive">
+                <option value="Guava Cheese">
+                <option value="Apple Crumble">
+                <option value="Nutella Banana">
+            </datalist>
+        </div>
+        
+        <div class="form-group">
+            <label for="date_made">Date Made</label>
+            <input type="text" id="date_made" name="date_made" readonly style="background: #f5f5f5; cursor: not-allowed;">
+        </div>
+        
+        <div class="form-group">
+            <label for="count">Count (# of Empanadas) *</label>
+            <input type="number" id="count" name="count" required value="48" placeholder="48">
+        </div>
+        
+        <div class="form-group">
+            <label for="location">Location *</label>
+            <select id="location" name="location" required>
+                <option value="Latta Storage">Latta Storage (Freezer)</option>
+                <option value="Latta Display">Latta Display (Cases)</option>
+                <option value="Optimist Hall">Optimist Hall</option>
+            </select>
+        </div>
+        
+        <button type="submit">Add Bag</button>
+    </form>
+</div>
+
+<script>
+// Load next bag number and set date on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    // Set today's date
+    const today = new Date();
+    const dateStr = (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                    today.getDate().toString().padStart(2, '0') + '/' + 
+                    today.getFullYear();
+    document.getElementById('date_made').value = dateStr;
+    
+    // Load next bag number
+    try {
+        const response = await fetch('/api/next-bag-number');
+        const data = await response.json();
+        document.getElementById('bag_num').value = data.next_number;
+    } catch (error) {
+        console.error('Error loading bag number:', error);
+        document.getElementById('bag_num').value = 1;
+    }
+});
+
+document.getElementById('bagForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const alertDiv = document.getElementById('alert');
+    const form = e.target;
+    
+    // Get values
+    const data = {
+        bag_num: document.getElementById('bag_num').value,
+        flavor: document.getElementById('flavor').value,
+        count: document.getElementById('count').value,
+        location: document.getElementById('location').value
+    };
+    
+    try {
+        const response = await fetch('/add-bag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alertDiv.className = 'alert success';
+            alertDiv.textContent = '✅ ' + result.message;
+            form.reset();
+            document.getElementById('bag_num').focus();
+        } else {
+            alertDiv.className = 'alert error';
+            alertDiv.textContent = '❌ ' + result.error;
+        }
+    } catch (error) {
+        alertDiv.className = 'alert error';
+        alertDiv.textContent = '❌ Error: ' + error.message;
+    }
+});
+</script>
+{% endblock %}
